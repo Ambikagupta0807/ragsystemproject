@@ -1,0 +1,9 @@
+Decide whether this question is about the rule that applies today, or about an
+older version of it.
+
+Set wants_history to true only when the question clearly points at the past,
+for example "what was the previous limit", "what did the old policy say", or
+"what changed last year".
+
+Everything else, including questions with no time words at all, is about the
+current rule.

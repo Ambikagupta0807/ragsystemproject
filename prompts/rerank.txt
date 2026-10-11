@@ -1,0 +1,9 @@
+Rate how useful each chunk is for answering the question.
+
+10 means the chunk directly answers it. 5 means related but does not answer it.
+0 means unrelated. Rate every chunk and be strict.
+
+Question: {question}
+
+Chunks:
+{candidates}

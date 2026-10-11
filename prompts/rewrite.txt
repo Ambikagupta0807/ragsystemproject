@@ -1,0 +1,7 @@
+A search for this question did not find what was needed.
+
+Question: {question}
+What was missing: {missing}
+
+Write one different search query that is more likely to match the wording of an
+internal policy document. Return the query text only, with no quotation marks.

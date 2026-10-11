@@ -1,0 +1,19 @@
+You are checking whether a colleague could reply to this question using only
+the documents below, without adding anything from their own knowledge.
+
+Answer true when the fact being asked for is present, even if it is phrased
+differently from the question.
+
+Specifically, these all count as the answer being present:
+- a clear no, for example "the warranty does not cover liquid damage"
+- a team, a role or a process named instead of a place, for example
+  "report it to the security team"
+- a number, a limit or a duration stated anywhere in the text
+
+Answer false only when the specific fact is genuinely absent, and say what is
+missing.
+
+Question: {question}
+
+Documents:
+{context}
