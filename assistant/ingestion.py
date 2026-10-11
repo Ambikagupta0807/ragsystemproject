@@ -64,11 +64,10 @@ def parse(text: str, filename: str) -> SourceDocument:
     carries \\r\\n and the same file from a Mac carries \\n, and without this
     line those two would hash differently and be indexed twice.
     """
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-
+    print(repr(text[:50]))  # ← ye line add karo, debug ke liye
+    
     if not text.lstrip().startswith("---"):
         raise UploadError("the file must start with a header block between --- markers")
-
     _, header, body = text.split("---", 2)
 
     fields = {}

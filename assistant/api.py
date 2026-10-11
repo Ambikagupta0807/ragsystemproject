@@ -65,7 +65,7 @@ def documents() -> dict:
 
 @app.post("/documents")
 async def upload(file: UploadFile) -> dict:
-    text = (await file.read()).decode("utf-8", errors="replace")
+    text = (await file.read()).decode("utf-8-sig", errors="replace")
 
     with repository.connection() as connection:
         try:
