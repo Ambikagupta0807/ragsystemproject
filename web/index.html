@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Internal Assistant</title>
+  <style>
+    body {
+  font-family: system-ui, sans-serif;
+  max-width: 820px;
+  margin: 36px auto;
+  padding: 0 16px;
+  color: #ffffff;
+  background-color: #000000;
+}
+
+h1 {
+  font-size: 20px;
+  margin-bottom: 4px;
+  color: #3b82f6;
+}
+
+h2 {
+  font-size: 15px;
+  margin: 0 0 10px;
+  color: #3b82f6;
+}
+
+p.sub {
+  color: #cccccc;
+  margin-top: 0;
+  font-size: 14px;
+}
+
+section {
+  border: 1px solid #333333;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+input[type=text] {
+  flex: 1;
+  padding: 10px;
+  font-size: 15px;
+  border: 1px solid #444444;
+  border-radius: 6px;
+  background-color: #111111;
+  color: #ffffff;
+}
+
+input[type=file] {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+select,
+button {
+  padding: 10px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #444444;
+  background-color: #111111;
+  color: #ffffff;
+}
+
+button {
+  background-color: #3b82f6;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid #222222;
+}
+
+th {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.note {
+  font-size: 13px;
+  color: #bbbbbb;
+  margin-top: 10px;
+}
+
+.turn {
+  border: 1px solid #333333;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.question {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.answer {
+  white-space: pre-wrap;
+  color: #ffffff;
+}
+
+.cite {
+  font-size: 13px;
+  color: #bbbbbb;
+  margin-top: 10px;
+}
+
+.cite div {
+  margin-bottom: 4px;
+}
+
+.warn {
+  font-size: 13px;
+  color: #ff6b6b;
+  margin-top: 8px;
+}
+
+details {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #bbbbbb;
+}
+
+code {
+  background: #111111;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #ffffff;
+}
+  </style>
+</head>
+<body>
+  <h1>Internal Assistant</h1>
+  <p class="sub">Answers only from the documents you are allowed to read. Shows its sources, prefers the current version, and says when it does not know.</p>
+
+  <section>
+    <h2>Documents</h2>
+    <form id="uploadForm">
+      <input type="file" id="file" accept=".md,.txt" required>
+      <button type="submit">Upload and index</button>
+    </form>
+    <div class="note" id="uploadNote">Nothing is indexed until you upload it. The same text under a different file name is recognised and skipped.</div>
+    <table id="documents"><thead><tr><th>Title</th><th>Version</th><th>Status</th><th>Visibility</th><th>From file</th><th>Chunks</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Ask</h2>
+    <form id="askForm">
+      <input type="text" id="question" placeholder="Ask about policy, delivery, errors, leave..." autocomplete="off" required>
+      <select id="username">
+        <option value="alice" selected>Alice, engineering</option>
+        <option value="bob">Bob, HR</option>
+        <option value="carol">Carol, finance</option>
+        <option value="guest">Guest, outside the company</option>
+      </select>
+      <button type="submit">Ask</button>
+    </form>
+  </section>
+
+  <div id="thread"></div>
+
+<script>
+const thread = document.getElementById("thread");
+
+async function loadDocuments() {
+  const response = await fetch("/documents");
+  const data = await response.json();
+  const body = document.querySelector("#documents tbody");
+
+  body.innerHTML = data.documents.map(d => `
+    <tr>
+      <td>${escapeHtml(d.title)}</td>
+      <td>v${d.version}</td>
+      <td>${d.status}</td>
+      <td>${d.visibility}${d.visibility === "restricted" ? " (" + escapeHtml(d.department) + ")" : ""}</td>
+      <td><code>${escapeHtml(d.source)}</code></td>
+      <td>${d.chunks}</td>
+    </tr>`).join("") || `<tr><td colspan="6">Nothing indexed yet. Upload a document to begin.</td></tr>`;
+}
+
+document.getElementById("uploadForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const input = document.getElementById("file");
+  const note = document.getElementById("uploadNote");
+  if (!input.files.length) return;
+
+  const body = new FormData();
+  body.append("file", input.files[0]);
+
+  note.textContent = "Indexing " + input.files[0].name + "...";
+  const response = await fetch("/documents", { method: "POST", body });
+  const data = await response.json();
+
+  note.textContent = response.ok ? data.message : "Rejected: " + data.detail;
+  input.value = "";
+  loadDocuments();
+});
+
+document.getElementById("askForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const question = document.getElementById("question").value;
+  const username = document.getElementById("username").value;
+  document.getElementById("question").value = "";
+
+  const turn = document.createElement("div");
+  turn.className = "turn";
+  turn.innerHTML = `<div class="question">${escapeHtml(question)} <small>(${username})</small></div><div class="answer">thinking...</div>`;
+  thread.prepend(turn);
+
+  const response = await fetch("/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, username })
+  });
+  const data = await response.json();
+
+  const citations = data.citations.map(c =>
+    `<div>${c.grounded ? "verified" : "NOT VERIFIED"} &middot; <code>${escapeHtml(c.source)}</code> &middot; ${c.status} &middot; reviewed ${c.updated_on}</div>`
+  ).join("");
+
+  const warnings = data.warnings.map(w => `<div class="warn">${escapeHtml(w)}</div>`).join("");
+
+  turn.innerHTML = `
+    <div class="question">${escapeHtml(question)} <small>(${username})</small></div>
+    <div class="answer">${escapeHtml(data.answer)}</div>
+    <div class="cite">${citations}</div>
+    ${warnings}
+    <details><summary>what it did</summary><pre>${escapeHtml(data.trace.join("\n"))}</pre></details>
+  `;
+});
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = String(text);
+  return div.innerHTML;
+}
+
+loadDocuments();
+</script>
+</body>
+</html>
