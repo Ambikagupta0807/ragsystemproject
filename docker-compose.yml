@@ -1,0 +1,32 @@
+# The only infrastructure this project needs: one Postgres with pgvector.
+#
+#   docker compose up -d        start it
+#   docker compose ps           check it is healthy
+#   docker compose down         stop it, data stays
+#   docker compose down -v      stop it and delete the data
+#
+# One database holds everything: the documents, their chunks, the vectors, the
+# access rules and the full text index. One connection string, one backup.
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: rag-postgres
+    environment:
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: ragsecret
+      POSTGRES_DB: ragdb
+    ports:
+      # Published on 5433 because many machines already run a local
+      # Postgres on 5432. Inside the container it is still 5432.
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d ragdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
