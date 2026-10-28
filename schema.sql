@@ -78,4 +78,5 @@ INSERT INTO users (username, display_name, department, is_employee) VALUES
     ('guest', 'Guest',  'none',        false)
 ON CONFLICT (username) DO NOTHING;
 INSERT INTO users (username, display_name, department, is_employee)
-VALUES ('priya', 'Priya', 'hr', true);
+VALUES ('priya', 'Priya', 'hr', true)
+ON CONFLICT (username) DO NOTHING;
